@@ -10,8 +10,9 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 struct AppState {
+    search_query: String,
     wallpapers: Vec<(String, String)>, // (image_url, wallpaper_url)
-    textures: Vec<Option<TextureHandle>>,
+    textures: HashMap<String, Option<TextureHandle>>, // Map image_url to TextureHandle
     image_size: f32, // Size of each wallpaper image
     columns: usize,   // Number of columns
 }
@@ -36,33 +37,62 @@ fn main() -> Result<(), eframe::Error> {
 impl eframe::App for AppState {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            // ... (previous UI code remains the same)
+            ui.heading("Wallhaven Browser");
+
+            ui.horizontal(|ui| {
+                if ui.button("Home").clicked() {
+                    self.load_wallpapers("https://wallhaven.cc/", ctx);
+                }
+                if ui.button("Latest").clicked() {
+                    self.load_wallpapers("https://wallhaven.cc/latest", ctx);
+                }
+                if ui.button("Top").clicked() {
+                    self.load_wallpapers("https://wallhaven.cc/toplist", ctx);
+                }
+                if ui.button("Random").clicked() {
+                    self.load_wallpapers("https://wallhaven.cc/random", ctx);
+                }
+                ui.text_edit_singleline(&mut self.search_query);
+                if ui.button("Search").clicked() {
+                    let search_url = format!("https://wallhaven.cc/search?q={}", self.search_query);
+                    self.load_wallpapers(&search_url, ctx);
+                }
+            });
+
+            // Add sliders for image size and columns
+            ui.horizontal(|ui| {
+                ui.label("Image Size:");
+                ui.add(egui::Slider::new(&mut self.image_size, 100.0..=600.0).text("Size"));
+            });
+
+            ui.horizontal(|ui| {
+                ui.label("Columns:");
+                ui.add(egui::Slider::new(&mut self.columns, 1..=10).text("Cols"));
+            });
 
             let available_width = ui.available_width();
-
-            // Adjust image size based on available space
-            let padding = 5.0; // Add some padding between images
-            let image_width = (available_width - (self.columns as f32 + 1.0) * padding) / self.columns as f32;
+            let image_width = available_width / self.columns as f32;
             let image_height = self.image_size;
             let image_size = egui::vec2(image_width, image_height);
 
             egui::ScrollArea::vertical().show(ui, |ui| {
-                egui::Grid::new("wallpapers_grid").spacing([padding, padding]).show(ui, |ui| {
-                    for (i, texture_option) in self.textures.iter().enumerate() {
-                        if i % self.columns == 0 && i != 0 {
+                egui::Grid::new("wallpapers_grid").spacing([0.0, 0.0]).show(ui, |ui| {
+                    for (i, (img_src, wallpaper_url)) in self.wallpapers.iter().enumerate() {
+                        if i % self.columns == 0 {
                             ui.end_row();
                         }
-                        if let Some(texture) = texture_option {
-                            let image = egui::Image::new(texture);
-                            if ui.add_sized(image_size, image).clicked() {
-                                if let Some(wallpaper_url) = self.wallpapers.get(i).map(|(_, url)| url) {
+                        if let Some(texture) = self.textures.get(img_src) {
+                            if let Some(texture) = texture {
+                                let image = egui::Image::new(texture);
+                                if ui.add_sized(image_size, image).clicked() {
                                     if let Err(e) = open::that(wallpaper_url) {
                                         eprintln!("Failed to open URL: {}", e);
                                     }
                                 }
                             }
                         } else {
-                            ui.add_sized(image_size, egui::Label::new("Loading..."));
+                            // Skip if the texture is not ready yet
+                            continue;
                         }
                     }
                 });
@@ -70,7 +100,6 @@ impl eframe::App for AppState {
         });
     }
 }
-
 
 impl AppState {
     fn load_wallpapers(&mut self, url: &str, ctx: &egui::Context) {
@@ -90,7 +119,7 @@ impl AppState {
                     })
                     .collect();
 
-                let nodes_len = nodes.len(); // Take the length before moving nodes
+                let nodes_len = nodes.len();
                 let (tx, rx) = mpsc::channel();
 
                 thread::scope(|s| {
@@ -98,17 +127,18 @@ impl AppState {
                         let tx = tx.clone();
                         let ctx = ctx.clone();
                         s.spawn(move |_| {
-                            match load_image_from_url(&img_src, &ctx) {
-                                Ok(texture) => tx.send((img_src, wallpaper_url, Some(texture))).unwrap(),
-                                Err(_) => tx.send((img_src, wallpaper_url, None)).unwrap(),
-                            }
+                            let texture = match load_image_from_url(&img_src, &ctx) {
+                                Ok(texture) => Some(texture),
+                                Err(_) => None,
+                            };
+                            tx.send((img_src, wallpaper_url, texture)).unwrap();
                         });
                     }
                 }).unwrap();
 
                 for (img_src, wallpaper_url, texture) in rx.iter().take(nodes_len) {
-                    self.wallpapers.push((img_src, wallpaper_url));
-                    self.textures.push(texture);
+                    self.wallpapers.push((img_src.clone(), wallpaper_url));
+                    self.textures.insert(img_src, texture);
                 }
             }
         }
@@ -127,5 +157,3 @@ fn load_image_from_url(url: &str, ctx: &egui::Context) -> Result<TextureHandle> 
     let color_image = ColorImage::from_rgba_unmultiplied(size, &image);
     Ok(ctx.load_texture(url, color_image, Default::default()))
 }
-
-
