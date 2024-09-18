@@ -1,0 +1,27 @@
+Here's a summary of the Rusty_Wallhaven_Browser project:
+
+1. Project Name: Rusty_Wallhaven_Browser
+2. Short Description: A user-friendly web browser extension that allows users to browse and download wallpapers from Wallhaven.cc using the egui library in Rust.
+
+3. Overall Description: The Rusty_Wallhaven_Browser is a visually appealing desktop application built with Rust and the egui UI framework, designed to provide an intuitive interface for searching and downloading wallpapers from the popular image sharing website Wallhaven.cc. It features a clean layout, customizable search query, and download directory management, making it easy to navigate and manage large collections of images.
+
+4. Main Purpose: I built this project to demonstrate my proficiency in building graphical user interfaces with egui in Rust while creating a useful tool for fans of the Wallhaven.cc community.
+
+5. Key Technologies:
+   - Rust programming language
+   - egui UI framework
+
+6. Unique Features:
+   - One cool feature is the integration of an image preview and download functionality, allowing users to quickly browse through wallpapers without having to leave the application.
+   - The app also includes a context menu for selecting multiple images and downloading them at once.
+
+7. Future Improvements:
+   - I'm thinking about adding support for other image sharing websites in addition to Wallhaven.cc.
+   - Another potential improvement would be implementing filters or sorting options to help users find specific types of wallpapers.
+
+8. Personal Notes: Building this project helped me solidify my understanding of egui and its capabilities, while also giving me a chance to work with image handling and downloading code.
+
+# Extractable Variables
+SHORT_DESCRIPTION = "A user-friendly web browser extension that allows users to browse and download wallpapers from Wallhaven.cc using the egui library in Rust."
+OVERALL_DESCRIPTION = "The Rusty_Wallhaven_Browser is a visually appealing desktop application built with Rust and the egui UI framework, designed to provide an intuitive interface for searching and downloading wallpapers from the popular image sharing website Wallhaven.cc. It features a clean layout, customizable search query, and download directory management, making it easy to navigate and manage large collections of images."
+GITHUB_TAGS = "Rusty Wallhaven Browser, egui, Rust programming language, desktop application, wallpaper downloader, image preview, context menu, user-friendly interface"

@@ -1,0 +1,365 @@
+
+========================================
+File: /home/hasnocool/Github/active/rusty_wallhaven_browser/Cargo.toml
+========================================
+[package]
+name = "wallhaven_browser"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reqwest = { version = "0.12.5", features = ["blocking"] }
+select = "0.6.0"
+eframe = "0.28.1"
+egui = "0.28.1"
+open = "5.3.0"
+image = "0.25.2"
+crossbeam = "0.8.0"
+anyhow = "1.0"
+rfd = "0.14.1"
+scraper = "0.19.1"
+========================================
+File: /home/hasnocool/Github/active/rusty_wallhaven_browser/src/main.rs
+========================================
+use eframe::egui;
+use egui::{ColorImage, TextureHandle, Vec2, Pos2, Color32, Stroke};
+use reqwest::blocking::Client;
+use anyhow::{Result, Context, Error as AnyhowError};
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
+use std::fs::File;
+use std::io::Write;
+
+#[derive(Default)]
+struct AppState {
+    search_query: String,
+    wallpapers: Vec<(String, String)>, // (image_url, wallpaper_url)
+    textures: HashMap<String, TextureHandle>, // Map image_url to TextureHandle
+    min_image_size: f32, // Minimum size of each wallpaper image
+    show_about: bool, // Control visibility of About dialog
+    selected_wallpapers: HashSet<String>, // Track selected wallpapers
+    preview_wallpaper: Option<String>, // Wallpaper URL to preview
+    context_menu_pos: Option<Pos2>, // Position of the context menu
+    context_menu_wallpaper: Option<String>, // Wallpaper URL for context menu
+    download_dir: String, // Directory to save wallpapers
+}
+
+fn main() -> Result<(), eframe::Error> {
+    let options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "Wallhaven Browser",
+        options,
+        Box::new(|cc| Ok(Box::new(AppState::new(cc)))),
+    ).map_err(|e| eframe::Error::from(e))
+}
+
+impl AppState {
+    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        let mut app = Self {
+            min_image_size: 100.0,
+            show_about: false,
+            download_dir: std::env::current_dir().unwrap_or_default().to_string_lossy().to_string(),
+            ..Default::default()
+        };
+        app.load_wallpapers("https://wallhaven.cc/search?categories=110&purity=100&atleast=1920x1080&ratios=16x9&sorting=relevance&order=desc", &cc.egui_ctx);
+        app
+    }
+
+    fn load_wallpapers(&mut self, url: &str, ctx: &egui::Context) {
+        self.wallpapers.clear();
+        self.textures.clear();
+
+        let client = Client::new();
+        if let Ok(response) = client.get(url).send() {
+            if let Ok(text) = response.text() {
+                // Very basic parsing, you might want to use a proper HTML parser in a real application
+                for line in text.lines() {
+                    if line.contains("class=\"preview\"") && line.contains("href=\"") {
+                        if let Some(start) = line.find("href=\"") {
+                            if let Some(end) = line[start + 6..].find('"') {
+                                let wallpaper_url = &line[start + 6..start + 6 + end];
+                                let thumb_url = wallpaper_url.replace("wallhaven.cc/w/", "w.wallhaven.cc/full/").replace("/wallpaper/", "/thumb/small/th-") + ".jpg";
+                                self.wallpapers.push((thumb_url.to_string(), wallpaper_url.to_string()));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Load textures
+        for (img_src, _) in &self.wallpapers {
+            if let Ok(texture) = load_image_from_url(img_src, ctx) {
+                self.textures.insert(img_src.clone(), texture);
+            }
+        }
+    }
+
+    fn display_wallpapers(&mut self, ui: &mut egui::Ui, available_size: Vec2) {
+        let padding = 2.0;
+        let available_width = available_size.x - 2.0 * padding;
+
+        let (columns, image_size) = self.calculate_grid_layout(available_width);
+
+        let wallpapers = self.wallpapers.clone();
+        egui::Grid::new("wallpapers_grid")
+            .spacing([padding, padding])
+            .show(ui, |ui| {
+                for (i, (img_src, wallpaper_url)) in wallpapers.iter().enumerate() {
+                    if i % columns == 0 && i != 0 {
+                        ui.end_row();
+                    }
+
+                    self.display_wallpaper(ui, img_src, wallpaper_url, image_size);
+                }
+            });
+    }
+
+    fn calculate_grid_layout(&self, available_width: f32) -> (usize, Vec2) {
+        let max_columns = (available_width / self.min_image_size).floor() as usize;
+        let columns = max_columns.max(1);
+        let image_size = (available_width / columns as f32).floor();
+        (columns, Vec2::new(image_size, image_size))
+    }
+
+    fn display_wallpaper(&mut self, ui: &mut egui::Ui, img_src: &str, wallpaper_url: &str, image_size: Vec2) {
+        if let Some(texture) = self.textures.get(img_src) {
+            let is_selected = self.selected_wallpapers.contains(wallpaper_url);
+            let image = egui::Image::new(texture).fit_to_exact_size(image_size);
+            
+            let (rect, response) = ui.allocate_exact_size(image_size, egui::Sense::click());
+            
+            if ui.is_rect_visible(rect) {
+                let mut image_ui = ui.child_ui(rect, egui::Layout::default(), None);
+                image.paint_at(&mut image_ui, rect);
+    
+                if is_selected {
+                    let border_color = Color32::from_rgb(0, 255, 0); // Bright green
+                    let stroke = Stroke::new(1.0, border_color);
+                    image_ui.painter().rect_stroke(rect, 0.0, stroke);
+                }
+            }
+    
+            if response.clicked() {
+                self.toggle_selection(wallpaper_url);
+            }
+    
+            if response.double_clicked() {
+                self.open_preview(wallpaper_url);
+            }
+    
+            if response.secondary_clicked() {
+                self.open_context_menu(response.rect.center(), wallpaper_url);
+            }
+        } else {
+            println!("Texture not found for {}. Available textures: {:?}", img_src, self.textures.keys());
+            ui.add_sized(image_size, egui::Label::new("Loading..."));
+        }
+    }
+
+    fn toggle_selection(&mut self, wallpaper_url: &str) {
+        if self.selected_wallpapers.contains(wallpaper_url) {
+            self.selected_wallpapers.remove(wallpaper_url);
+        } else {
+            self.selected_wallpapers.insert(wallpaper_url.to_string());
+        }
+    }
+
+    fn open_preview(&mut self, wallpaper_url: &str) {
+        self.preview_wallpaper = Some(wallpaper_url.to_string());
+    }
+
+    fn open_context_menu(&mut self, pos: Pos2, wallpaper_url: &str) {
+        self.context_menu_pos = Some(pos);
+        self.context_menu_wallpaper = Some(wallpaper_url.to_string());
+    }
+
+    fn show_preview(&mut self, ctx: &egui::Context) {
+        if let Some(wallpaper_url) = &self.preview_wallpaper {
+            egui::Window::new("Wallpaper Preview")
+                .open(&mut self.preview_wallpaper.is_some())
+                .default_size(Vec2::new(800.0, 600.0))
+                .show(ctx, |ui| {
+                    ui.label(format!("Full-size preview of: {}", wallpaper_url));
+                    if let Some(texture) = self.textures.get(wallpaper_url) {
+                        ui.image(texture);
+                    } else {
+                        ui.label("Loading full-size image...");
+                    }
+                });
+        }
+    }
+
+    fn show_context_menu(&mut self, ctx: &egui::Context) {
+        if let (Some(pos), Some(wallpaper_url)) = (self.context_menu_pos, &self.context_menu_wallpaper) {
+            let wallpaper_url = wallpaper_url.clone();
+            egui::Area::new(egui::Id::new("context_menu"))
+                .fixed_pos(pos)
+                .show(ctx, |ui| {
+                    ui.set_min_width(150.0);
+                    if ui.button("Download").clicked() {
+                        if let Err(e) = self.download_wallpaper(&wallpaper_url) {
+                            eprintln!("Failed to download wallpaper: {}", e);
+                        }
+                        self.context_menu_pos = None;
+                        self.context_menu_wallpaper = None;
+                    }
+                });
+        }
+    }
+
+    fn download_wallpaper(&self, wallpaper_url: &str) -> Result<()> {
+        let client = Client::new();
+        let response = client.get(wallpaper_url).send().context("Failed to GET wallpaper")?;
+        let bytes = response.bytes().context("Failed to get bytes from response")?;
+        
+        let file_name = wallpaper_url.split('/').last().unwrap_or("wallpaper.jpg");
+        let file_path = PathBuf::from(&self.download_dir).join(file_name);
+        
+        let mut file = File::create(file_path).context("Failed to create file")?;
+        file.write_all(&bytes).context("Failed to write to file")?;
+        Ok(())
+    }
+
+    fn download_selected_wallpapers(&self) -> Result<()> {
+        for wallpaper_url in &self.selected_wallpapers {
+            if let Err(e) = self.download_wallpaper(wallpaper_url) {
+                eprintln!("Failed to download wallpaper {}: {}", wallpaper_url, e);
+            }
+        }
+        Ok(())
+    }
+
+    fn set_download_directory(&mut self, dir: String) {
+        self.download_dir = dir;
+    }
+}
+
+impl eframe::App for AppState {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
+            egui::menu::bar(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Exit").clicked() {
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
+                });
+                
+                ui.menu_button("View", |ui| {
+                    if ui.button("Home").clicked() {
+                        if let Err(e) = self.load_wallpapers("https://wallhaven.cc/search?categories=110&purity=100&atleast=1920x1080&ratios=16x9&sorting=relevance&order=desc", ctx) {
+                            eprintln!("Failed to load home wallpapers: {}", e);
+                        }
+                        ui.close_menu();
+                    }
+                    if ui.button("Latest").clicked() {
+                        if let Err(e) = self.load_wallpapers("https://wallhaven.cc/search?categories=110&purity=100&atleast=1920x1080&ratios=16x9&sorting=date_added&order=desc", ctx) {
+                            eprintln!("Failed to load latest wallpapers: {}", e);
+                        }
+                        ui.close_menu();
+                    }
+                    if ui.button("Top").clicked() {
+                        if let Err(e) = self.load_wallpapers("https://wallhaven.cc/search?categories=110&purity=100&atleast=1920x1080&ratios=16x9&sorting=toplist&order=desc", ctx) {
+                            eprintln!("Failed to load top wallpapers: {}", e);
+                        }
+                        ui.close_menu();
+                    }
+                    if ui.button("Random").clicked() {
+                        if let Err(e) = self.load_wallpapers("https://wallhaven.cc/search?categories=110&purity=100&atleast=1920x1080&ratios=16x9&sorting=random&order=desc", ctx) {
+                            eprintln!("Failed to load random wallpapers: {}", e);
+                        }
+                        ui.close_menu();
+                    }
+                });
+                
+                ui.menu_button("Settings", |ui| {
+                    if ui.button("Set Download Directory").clicked() {
+                        if let Some(path) = rfd::FileDialog::new().pick_folder() {
+                            self.set_download_directory(path.to_string_lossy().to_string());
+                        }
+                        ui.close_menu();
+                    }
+                });
+
+                ui.menu_button("Help", |ui| {
+                    if ui.button("About").clicked() {
+                        self.show_about = true;
+                        ui.close_menu();
+                    }
+                });
+            });
+        });
+
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("Wallhaven Browser");
+                ui.add(egui::TextEdit::singleline(&mut self.search_query).hint_text("Search"));
+                if ui.button("🔍").clicked() {
+                    let search_url = format!("https://wallhaven.cc/search?q={}&categories=110&purity=100&atleast=1920x1080&ratios=16x9&sorting=relevance&order=desc", self.search_query);
+                    self.load_wallpapers(&search_url, ctx);
+                }
+                ui.add(egui::Slider::new(&mut self.min_image_size, 50.0..=300.0).text("Min Size"));
+
+                if ui.button("Download Selected Wallpapers").clicked() {
+                    if let Err(e) = self.download_selected_wallpapers() {
+                        eprintln!("Failed to download selected wallpapers: {}", e);
+                    }
+                }
+            });
+        });
+
+        egui::CentralPanel::default().show(ctx, |ui| {
+            let available_size = ui.available_size();
+            egui::ScrollArea::vertical()
+                .auto_shrink([false; 2])
+                .show(ui, |ui| {
+                    self.display_wallpapers(ui, available_size);
+                });
+        });
+
+        self.show_preview(ctx);
+        self.show_context_menu(ctx);
+
+        if self.show_about {
+            egui::Window::new("About Wallhaven Browser")
+                .open(&mut self.show_about)
+                .show(ctx, |ui| {
+                    ui.label("Wallhaven Browser v1.0");
+                    ui.label("Created with egui and Rust");
+                    ui.label("© 2024 hasnocool");
+                });
+        }
+
+        egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.label(format!("Wallpapers: {} | Selected: {} | Download Directory: {}",
+                    self.wallpapers.len(),
+                    self.selected_wallpapers.len(),
+                    self.download_dir
+                ));
+            });
+        });
+    }
+}
+
+fn load_image_from_url(url: &str, ctx: &egui::Context) -> Result<TextureHandle> {
+    println!("Starting to load image from URL: {}", url);
+    let client = Client::new();
+    let response = client.get(url).send().context("Failed to GET from URL")?;
+    println!("Received response from URL");
+    let bytes = response.bytes().context("Failed to get bytes from response")?;
+    println!("Received {} bytes", bytes.len());
+    let image = image::load_from_memory(&bytes).context("Failed to load image from memory")?;
+    println!("Loaded image: {}x{}", image.width(), image.height());
+    let size = [image.width() as usize, image.height() as usize];
+    let image_buffer = image.to_rgba8();
+    let pixels = image_buffer.as_flat_samples();
+    let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
+    println!("Created ColorImage");
+    let texture = ctx.load_texture(url, color_image, Default::default());
+    println!("Created texture");
+    Ok(texture)
+}
+
+
+

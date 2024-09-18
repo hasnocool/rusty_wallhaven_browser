@@ -1,68 +1,54 @@
-# Wallhaven Browser
+**Wallhaven Browser: A Rust-based GUI App to Browse and Download High-Resolution Wallpapers**
+=====================================================================================
 
-Wallhaven Browser is a simple application that allows users to browse and view wallpapers from [Wallhaven](https://wallhaven.cc/) using the `egui` framework. The application provides functionalities to view the latest, top, and random wallpapers, as well as search for wallpapers based on user queries.
+**Project Title:** Wallhaven Browser
+------------------------------
 
-## Features
+A simple yet powerful graphical user interface (GUI) application built using the Rust programming language and the egui library. This project is designed to browse high-resolution wallpapers from the popular website Wallhaven.cc.
 
-- Browse wallpapers from Wallhaven:
-  - Home
-  - Latest wallpapers
-  - Top wallpapers
-  - Random wallpapers
-- Search for wallpapers by query
-- Click on wallpaper thumbnails to open the corresponding wallpaper URL in the default web browser
+**Description:**
+---------------
 
-## Installation
+Wallhaven Browser is an open-source GUI app that allows users to search, browse, and download stunning high-resolution wallpapers from Wallhaven.cc. The application features a user-friendly interface, making it easy for anyone to find and save their favorite images. With its minimalistic design and robust functionality, Wallhaven Browser aims to become the go-to tool for wallpaper enthusiasts.
 
-### Prerequisites
+**Features:**
+------------
 
-- [Rust](https://www.rust-lang.org/tools/install) (latest stable version)
-- [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
+*   **Search Functionality**: Quickly search for wallpapers using keywords or tags
+*   **Wallpaper Display**: Browse through high-resolution images with a built-in scroll area
+*   **Context Menu**: Select and download multiple wallpapers at once
+*   **Settings**: Configure the application's settings, including the download directory
+*   **Help**: Access an about section for more information on the project
 
-### Build
+**Installation:**
+-----------------
 
-1. Clone the repository:
+To install Wallhaven Browser, follow these steps:
 
-    ```sh
-    git clone https://github.com/yourusername/wallhaven_browser.git
-    cd wallhaven_browser
-    ```
+1.  Clone the repository using `git clone https://github.com/your-username/wallhaven-browser.git`
+2.  Navigate to the project directory and run `cargo build-bundle` to compile the application
+3.  Run `cargo run` to start the GUI app
 
-2. Build the project:
+**Usage:**
+------------
 
-    ```sh
-    cargo build --release
-    ```
+To use Wallhaven Browser, follow these steps:
 
-3. Run the application:
+1.  Launch the application using the command `cargo run`
+2.  Use the search bar to find wallpapers by keyword or tag
+3.  Browse through the displayed images and select your favorites
+4.  Right-click on an image to access the context menu and download it
 
-    ```sh
-    cargo run --release
-    ```
+**Contributing:**
+-----------------
 
-## Usage
+If you'd like to contribute to Wallhaven Browser, feel free to fork this repository and submit a pull request with your changes.
 
-When you run the application, you will see a window with the heading "Wallhaven Browser" and a toolbar with the following buttons:
+**License:**
+------------
 
-- **Home**: Loads the home page wallpapers from Wallhaven.
-- **Latest**: Loads the latest wallpapers from Wallhaven.
-- **Top**: Loads the top wallpapers from Wallhaven.
-- **Random**: Loads random wallpapers from Wallhaven.
-- **Search**: Enter a search query in the text box and click this button to search for wallpapers.
+Wallhaven Browser is released under the MIT License. See `LICENSE.md` for more information.
 
-The wallpapers will be displayed as thumbnails in a grid layout. You can click on any thumbnail to open the corresponding wallpaper URL in your default web browser.
+**Tags/Keywords:**
 
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request for any changes or improvements.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Acknowledgements
-
-- [Wallhaven](https://wallhaven.cc/) for providing the wallpapers.
-- [eframe](https://docs.rs/eframe/) and [egui](https://docs.rs/egui/) for the Rust GUI framework.
-- [reqwest](https://docs.rs/reqwest/) for the HTTP client.
-- [select](https://docs.rs/select/) for HTML parsing.
+Rust, egui, GUI app, wallpaper browser, high-resolution wallpapers, Wallhaven.cc, download images, context menu, settings, help
