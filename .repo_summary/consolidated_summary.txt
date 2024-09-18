@@ -1,27 +1,40 @@
-Here's a summary of the Rusty_Wallhaven_Browser project:
+Here's a strictly formatted summary based on your provided Rust code:
 
-1. Project Name: Rusty_Wallhaven_Browser
-2. Short Description: A user-friendly web browser extension that allows users to browse and download wallpapers from Wallhaven.cc using the egui library in Rust.
-
-3. Overall Description: The Rusty_Wallhaven_Browser is a visually appealing desktop application built with Rust and the egui UI framework, designed to provide an intuitive interface for searching and downloading wallpapers from the popular image sharing website Wallhaven.cc. It features a clean layout, customizable search query, and download directory management, making it easy to navigate and manage large collections of images.
-
-4. Main Purpose: I built this project to demonstrate my proficiency in building graphical user interfaces with egui in Rust while creating a useful tool for fans of the Wallhaven.cc community.
-
-5. Key Technologies:
+1. **Project Name:** Rusty Wallhaven Browser
+2. **Short Description:** A graphical web browser written in Rust that specializes in browsing and downloading wallpapers from the Wallhaven website.
+3. **Overall Description:** The project uses the egui library for GUI creation, providing users with an interface to search for and download wallpapers. The codebase also includes a feature to load images from URLs, utilizing libraries such as image and async_trait. This browser is designed specifically for browsing the Wallhaven website, allowing users to interactively browse through wallpaper collections and save them to their local storage.
+4. **Main Purpose:** The main purpose of this project is to provide an easy-to-use interface for users to browse and download wallpapers from the Wallhaven website.
+5. **Key Technologies:**
    - Rust programming language
-   - egui UI framework
+   - egui library for GUI creation
+   - image library for loading images from URLs
+   - async_trait library for asynchronous trait implementation
+6. **Unique Features:**
+   - Ability to load and display wallpapers directly from URLs
+   - Interactive search bar for finding specific wallpapers
+   - Support for downloading selected wallpapers to local storage
+7. **Future Improvements:**
+   - Enhancing the search functionality to include more advanced filters (e.g., resolution, style)
+   - Adding support for other image hosting websites beyond Wallhaven
+8. **Personal Notes:** This project is a great example of how Rust can be used to create visually appealing GUI applications with ease.
+9. **GitHub Tags:** rust gui browser wallhaven wallpaper download egui library image async_trait web development
+10. **Installable Modules:** rust, egui, image, async_trait
+11. **Suggested Folder Names:** 
+    - images
+    - wallpapers
+    - downloads
+12. **Root Project Folder Name Suggestions:** Rusty Wallhaven Browser, Wallpaper Browsing App, Image Downloader Project
 
-6. Unique Features:
-   - One cool feature is the integration of an image preview and download functionality, allowing users to quickly browse through wallpapers without having to leave the application.
-   - The app also includes a context menu for selecting multiple images and downloading them at once.
-
-7. Future Improvements:
-   - I'm thinking about adding support for other image sharing websites in addition to Wallhaven.cc.
-   - Another potential improvement would be implementing filters or sorting options to help users find specific types of wallpapers.
-
-8. Personal Notes: Building this project helped me solidify my understanding of egui and its capabilities, while also giving me a chance to work with image handling and downloading code.
-
-# Extractable Variables
-SHORT_DESCRIPTION = "A user-friendly web browser extension that allows users to browse and download wallpapers from Wallhaven.cc using the egui library in Rust."
-OVERALL_DESCRIPTION = "The Rusty_Wallhaven_Browser is a visually appealing desktop application built with Rust and the egui UI framework, designed to provide an intuitive interface for searching and downloading wallpapers from the popular image sharing website Wallhaven.cc. It features a clean layout, customizable search query, and download directory management, making it easy to navigate and manage large collections of images."
-GITHUB_TAGS = "Rusty Wallhaven Browser, egui, Rust programming language, desktop application, wallpaper downloader, image preview, context menu, user-friendly interface"
+# Extracted Variables:
+PROJECT_NAME = "Rusty Wallhaven Browser"
+SHORT_DESCRIPTION = "A graphical web browser written in Rust that specializes in browsing and downloading wallpapers from the Wallhaven website."
+OVERALL_DESCRIPTION = "The project uses the egui library for GUI creation, providing users with an interface to search for and download wallpapers. The codebase also includes a feature to load images from URLs, utilizing libraries such as image and async_trait. This browser is designed specifically for browsing the Wallhaven website, allowing users to interactively browse through wallpaper collections and save them to their local storage."
+MAIN_PURPOSE = "The main purpose of this project is to provide an easy-to-use interface for users to browse and download wallpapers from the Wallhaven website."
+KEY_TECHNOLOGIES = "Rust programming language, egui library for GUI creation, image library for loading images from URLs, async_trait library for asynchronous trait implementation"
+UNIQUE_FEATURES = "Ability to load and display wallpapers directly from URLs, Interactive search bar for finding specific wallpapers, Support for downloading selected wallpapers to local storage"
+FUTURE_IMPROVEMENTS = "Enhancing the search functionality to include more advanced filters (e.g., resolution, style), Adding support for other image hosting websites beyond Wallhaven"
+PERSONAL_NOTES = "This project is a great example of how Rust can be used to create visually appealing GUI applications with ease."
+GITHUB_TAGS = "rust gui browser wallhaven wallpaper download egui library image async_trait web development"
+INSTALLABLE_MODULES = "rust, egui, image, async_trait"
+SUGGESTED_FOLDER_NAMES = "images, wallpapers, downloads"
+ROOT_PROJECT_FOLDER_NAME_SUGGESTIONS = "Rusty Wallhaven Browser, Wallpaper Browsing App, Image Downloader Project"
